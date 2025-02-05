@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"net/smtp"
 	"os"
 	"strings"
 	"time"
@@ -29,13 +30,19 @@ func main() {
 }
 
 func scrapeThenMail() {
-	_, err := scrape() // TODO - handle entries
+	e, err := scrape()
 	if err != nil {
 		slog.Error("Scraping", "err", err)
 		return
 	}
 
-	err = sendEmail()
+	msg, err := prepareEntries(e)
+	if err != nil {
+		slog.Error("Preparing entires", "err", err)
+		return
+	}
+
+	err = sendEmail(msg)
 	if err != nil {
 		slog.Error("Sending email", "err", err)
 		return
@@ -77,7 +84,35 @@ func scrape() ([]entry, error) {
 	return entries, nil
 }
 
-// TODO
-func sendEmail() error {
+func prepareEntries(entries []entry) (string, error) {
+	// TODO - reading this and customizability is a pain.
+	message := "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n<h1>Entries</h1>\n<ul>\n"
+	for _, entry := range entries {
+		message += fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", entry.link, entry.title)
+	}
+	message += "</ul>\n</body>\n</html>"
+	return message, nil
+}
+
+func sendEmail(message string) error {
+	MailFrom := os.Getenv("MAILFROM")
+	MailPass := os.Getenv("MAILPASS")
+	MailTo := os.Getenv("MAILTO")
+	MailHost := os.Getenv("MAILHOST")
+	MailPort := os.Getenv("MAILPORT")
+
+	addr := MailHost + ":" + MailPort
+	auth := smtp.PlainAuth("", MailFrom, MailPass, MailHost)
+	to := []string{MailTo}
+
+	// TODO - does this really need to be written out here?
+	// Adding email headers for rendering html
+	message = fmt.Sprintf("To: %s\nFrom: %s\nSubject: %s\nMIME-version: 1.0;\nContent-Type: text/html; charset=UTF-8;\n", MailTo, MailFrom, "Entries") + message
+
+	err := smtp.SendMail(addr, auth, MailFrom, to, []byte(message))
+	if err != nil {
+		return fmt.Errorf("sending email: %w", err)
+	}
+
 	return nil
 }
