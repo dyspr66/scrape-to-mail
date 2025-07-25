@@ -17,6 +17,7 @@ func main() {
 	err := godotenv.Load()
 	if err != nil {
 		slog.Error("Loading .env", "err", err)
+		return
 	}
 
 	timeToExecute := os.Getenv("TIME")
@@ -24,6 +25,7 @@ func main() {
 	_, err = s.Every(1).Days().At(timeToExecute).Do(scrapeThenMail)
 	if err != nil {
 		slog.Error("Specifying func to call", "err", err)
+		return
 	}
 
 	s.StartBlocking()
