@@ -6,8 +6,8 @@ Scrapes data from pages, then mails the data to you at a certain time every day.
 
 Make sure you already [have Go installed](https://go.dev/doc/install).
 
-1. Set up the [config](#config)
-2. Run `go run .`
+1. Create a file named `.env` in this directory. In it, set up the [config](#config)
+2. cd into this directory, then run `go run .`
 
 ### Config
 
